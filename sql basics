@@ -1,0 +1,200 @@
+ 
+Show the countries in Europe with a per capita GDP greater than 'United Kingdom'.
+select name from world where continent='Europe' and gdp/population > (select gdp/population from world where name='United Kingdom');
+
+Which country has a population that is more than United Kingdom but less than Germany? Show the name and the population.
+select name, population from world where population > (select population from world where name='United Kingdom') and population < (select population from world where name='Germany');
+
+List all the continents - just once each.
+select distinct continent from world;
+
+Give the total GDP of Africa
+select SUM(gdp) from world where continent='Africa';
+
+For each continent show the continent and number of countries.
+select distinct continent,count(*) from world group by continent;
+
+How many countries have an area of at least 1000000
+select count(*) from world where area>=1000000;
+
+What is the total population of ('Estonia', 'Latvia', 'Lithuania')
+select sum(population) from world where name in ('Estonia', 'Latvia', 'Lithuania');
+
+For each continent show the continent and number of countries with populations of at least 10 million.
+select distinct continent, count(name) from world where population >= 10000000
+group by continent;
+
+Find the largest country (by area) in each continent, show the continent, the name and the area
+SELECT continent, name, area FROM world x
+  WHERE area >= ALL
+    (SELECT area FROM world y
+        WHERE y.continent=x.continent
+          AND area>0)
+
+List each continent and the name of the country that comes first alphabetically.
+SELECT continent, MIN(name) AS first_country
+FROM world
+GROUP BY continent
+ORDER BY continent;
+
+Find the continents where all countries have a population <= 25000000. Then find the names of the countries associated with these continents. Show name, continent and population.
+select name, continent, population from world x
+where name=ALL
+(select name from world y
+where y.continent=x.continent and population <=25000000);
+
+Show the countries which have a name that includes the word 'United'
+select name from world where name like '%United%';
+
+Show the countries that are big by area or big by population. Show name, population and area.
+select name,population,area from world where area > 3000000 or population > 250000000;
+
+Show the name and capital where the name and the capital have the same number of characters.
+SELECT name, capital FROM world
+ WHERE LEN(name)=LEN(capital);
+Show the name and the capital where the first letters of each match. Don't include countries where the name and the capital are the same word.
+SELECT name, capital
+FROM world where LEFT(name,1) =  LEFT(capital,1) AND name <> capital;
+
+Show the matchid and player name for all goals scored by Germany.
+SELECT matchid,player FROM goal 
+  WHERE teamid = 'GER';
+
+Show the player, teamid, stadium and mdate for every German goal.
+SELECT player,teamid,stadium,mdate
+  FROM game JOIN goal ON (id=matchid) where teamid='GER';
+
+Show the team1, team2 and player for every goal scored by a player called Mario 
+select team1,team2,player from game join goal on (id=matchid) where player like 'Mario%';
+Show player, teamid, coach, gtime for all goals scored in the first 10 minutes
+SELECT player, teamid, coach, gtime
+  FROM goal join eteam on (teamid=id)
+ WHERE gtime<=10;
+
+List the dates of the matches and the name of the team in which 'Fernando Santos' was the team1 coach.
+select mdate,teamname from game join eteam on(team1=eteam.id) where coach= 'Fernando Santos';
+
+List the player for every goal scored in a game where the stadium was 'National Stadium, Warsaw'
+select player from goal join game on(matchid=id) where stadium =  'National Stadium, Warsaw';
+
+Show teamname and the total number of goals scored.
+SELECT teamname, count(*)
+  FROM eteam JOIN goal ON id=teamid
+ GROUP BY teamname;
+
+Show the stadium and the number of goals scored in each stadium.
+select stadium, count(*) from game join goal on id=matchid group by stadium;
+
+For every match involving 'POL', show the matchid, date and the number of goals scored.
+SELECT id,mdate, count(*)
+  FROM game JOIN goal ON matchid = id 
+ WHERE (team1 = 'POL' OR team2 = 'POL') group by id,mdate;
+
+For every match where 'GER' scored, show matchid, match date and the number of goals scored by 'GER'
+select id,mdate,count(*) from game join goal on id=matchid where teamid='GER' group by id,mdate;
+
+ 
+Obtain the cast list for 'Casablanca'.
+select name from actor join casting on id=actorid where movieid=27;
+
+Obtain the cast list for the film 'Alien'
+select name from actor join casting on id=actorid where movieid= (select id from movie where title = 'Alien');
+
+List the films in which 'Harrison Ford' has appeared
+SELECT m.title
+FROM movie m
+JOIN casting c ON m.id = c.movieid
+JOIN actor a ON a.id = c.actorid
+WHERE a.name = 'Harrison Ford';
+
+List the films where 'Harrison Ford' has appeared - but not in the starring role.
+SELECT m.title
+FROM movie m
+JOIN casting c ON m.id = c.movieid
+JOIN actor a ON a.id = c.actorid
+WHERE a.name = 'Harrison Ford' and c.ord <> 1;
+
+List the films together with the leading star for all 1962 films.
+SELECT m.title, a.name
+FROM movie m
+JOIN casting c ON m.id = c.movieid
+JOIN actor a ON a.id = c.actorid
+WHERE m.yr= 1962 and c.ord = 1;
+
+Which were the busiest years for 'Rock Hudson', show the year and the number of movies he made each year for any year in which he made more than 2 movies.
+SELECT yr,COUNT(title) FROM
+  movie JOIN casting ON movie.id=movieid
+        JOIN actor   ON actorid=actor.id
+WHERE name='Rock Hudson'
+GROUP BY yr
+HAVING COUNT(title) > 2;
+
+List the film title and the leading actor for all of the films 'Julie Andrews' played in.
+select title,name from movie
+JOIN casting on (movieid=movie.id and ord=1)
+JOIN actor on(actorid=actor.id)
+where movie.id in
+(SELECT movieid FROM casting
+WHERE actorid IN (
+  SELECT id FROM actor
+  WHERE name='Julie Andrews'));
+
+Obtain a list, in alphabetical order, of actors who've had at least 15 starring roles.
+select name from actor
+JOIN casting on (id=actorid and ord=1) 
+group by name having count(*)>=15 order by name;
+
+List the films released in the year 1978 ordered by the number of actors in the cast, then by title.
+select title,count(actorid) AS actorcount from movie
+JOIN casting ON (id=movieid) where yr=1978 
+group by id,title order by actorcount DESC,title ASC;
+
+List the teachers who have NULL for their department.
+ select name from teacher where dept IS NULL;
+
+List the teachers with department where department is not null.
+SELECT teacher.name, dept.name
+ FROM teacher INNER JOIN dept
+           ON (teacher.dept=dept.id);
+
+Use a different JOIN so that all teachers are listed.
+SELECT teacher.name, dept.name
+ FROM teacher LEFT JOIN dept
+           ON (teacher.dept=dept.id);
+
+Use a different JOIN so that all departments are listed.
+SELECT teacher.name, dept.name
+ FROM teacher RIGHT JOIN dept
+           ON (teacher.dept=dept.id);
+
+Use COUNT and GROUP BY dept.name to show each department and the number of staff. Use a RIGHT JOIN to ensure that the Engineering department is listed.
+SELECT d.name AS department_name, COUNT(t.id) AS staff_count
+FROM dept d
+LEFT JOIN teacher t ON t.dept = d.id
+GROUP BY d.name
+ORDER BY d.name;
+
+Use CASE to show the name of each teacher followed by 'Sci' if the teacher is in dept 1 or 2 and 'Art' otherwise.
+select teacher.name, 
+CASE
+ WHEN dept=1 THEN 'Sci'
+    WHEN dept=2 THEN 'Sci'
+    ELSE 'Art'
+END AS Dept
+from teacher;
+
+Give the id and the name for the stops on the '4' 'LRT' service.
+select id, name from stops JOIN route on (id=stop) where num='4' AND company='LRT';
+
+Write a query to show the services from Craiglockhart to London Road.
+SELECT a.company, a.num, a.stop, b.stop
+FROM route a JOIN route b ON
+  (a.company=b.company AND a.num=b.num)
+WHERE a.stop=53 and b.stop=149;
+
+Give a list of all the services which connect stops 115 and 137 ('Haymarket' and 'Leith')
+SELECT distinct a.company, a.num
+FROM route a JOIN route b ON
+  (a.company=b.company AND a.num=b.num)
+WHERE a.stop=115 and b.stop=137;
+
